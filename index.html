@@ -83,7 +83,7 @@ th.asc::after{content:" ▲"}th.desc::after{content:" ▼"}
 .h-bronze{background:linear-gradient(90deg,rgba(214,40,40,.35) 50%,rgb(176,112,58) 50%)}
 .h-argent{background:linear-gradient(90deg,rgba(176,112,58,.35) 50%,rgb(184,190,198) 50%)}
 .h-or{background:linear-gradient(90deg,rgba(184,190,198,.35) 50%,rgb(212,175,55) 50%)}
-.legend{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:13px;color:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:10px 16px;font-size:13px;color:var(--muted);justify-content:center}
 .banner{background:#fff6e0;border:1px solid #f1d38a;color:#7a5200;border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:14px}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:28px 16px 26px;margin-top:24px;background:#fff;position:relative}
 footer::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;
@@ -260,6 +260,7 @@ dialog input{width:100%}
     <div id="pv-classement">
     <div id="hero-live"></div>
     <div class="stats" id="pub-stats"></div>
+    <div class="card legend" id="legend"></div>
     <div class="card">
       <div class="toolbar">
         <input type="search" id="q" placeholder="Rechercher un joueur…">
@@ -281,7 +282,6 @@ dialog input{width:100%}
         <tbody></tbody>
       </table></div>
     </div>
-    <div class="card legend" id="legend"></div>
     </div>
   </section>
 
@@ -671,7 +671,7 @@ function renderPublic(){
       <td class="num">${p.plateaux}</td><td class="num">${p.gagnes}</td><td class="num">${p.joues}</td>
       <td class="num hide-sm">${p.arc_en_ciel||""}</td><td>${lvlHTML(p.couleur,p.demi)}</td></tr>`;
   }
-  $("#pub-table tbody").innerHTML = html || '<tr><td colspan="7" class="muted">Aucun joueur trouvé.</td></tr>';
+  $("#pub-table tbody").innerHTML = html || `<tr><td colspan="7" class="muted">${!PUB.length && pubMode==="live" ? "Aucun enfant n'a encore joué de plateau cette saison : le classement apparaîtra après le premier plateau." : "Aucun joueur trouvé."}</td></tr>`;
   document.querySelectorAll("#pub-table th").forEach(th=>{
     th.classList.toggle("asc", th.dataset.k===k && dir===1);
     th.classList.toggle("desc", th.dataset.k===k && dir===-1);
