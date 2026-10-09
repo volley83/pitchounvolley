@@ -91,15 +91,15 @@ footer::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;
 .logo-footer{display:block;width:min(520px,90%);height:auto;margin:0 auto 18px}
 footer a{color:var(--muted)}
 /* admin */
-.ptabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.ptabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
 
 /* édition */
 .edition{display:inline-block;margin-left:8px;background:linear-gradient(135deg,#f6dc78,#d4af37);color:#3d2f00;font-weight:800;font-size:.8em;border-radius:20px;padding:1px 10px;vertical-align:1px;white-space:nowrap}
 /* niveaux */
-.niv-hero{background:linear-gradient(135deg,#2b3589,#1f4fb3);color:#fff;border-radius:14px;padding:20px 22px;margin-bottom:14px}
+.niv-hero{background:linear-gradient(135deg,#2b3589,#1f4fb3);color:#fff;border-radius:14px;padding:24px 22px;margin-bottom:14px;text-align:center}
 .niv-hero h2{margin:0 0 6px;font:800 28px/1.1 "Baloo 2",system-ui,sans-serif}
-.niv-hero p{margin:6px 0 0;opacity:.92;max-width:760px}
-.niv-hero .motto{display:inline-block;margin-top:10px;background:#f9f95a;color:#141c38;font-weight:800;border-radius:20px;padding:4px 14px}
+.niv-hero p{margin:8px auto 0;opacity:.92;max-width:900px;font-size:16px;line-height:1.55}
+.niv-hero .motto{display:inline-block;margin-top:14px;background:#f9f95a;color:#141c38;font-weight:800;border-radius:20px;padding:4px 14px}
 .ladder{display:grid;grid-template-columns:5fr 4fr;gap:10px;margin-bottom:14px}
 .ladder-grp{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .ladder-grp h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}
@@ -355,7 +355,7 @@ const store = {
         joueurs: seed.joueurs.map((p,i)=>({id:i+1, club:p.club, nom:p.nom, prenom:p.prenom, plateaux:p.plateaux,
           gagnes:p.gagnes, joues:p.joues, arc_en_ciel:p.arc, couleur:p.couleur, demi:p.demi, presque:p.presque, note:""})),
         reglages: {saison:"2026-2027", plateaux_organises:"5", public_tous:"non"},
-        plateaux: [{"id": 1, "code": "PIT001", "date": "2026-10-10", "heure": "13:30", "date_limite": "2026-10-09", "email": "vidaubanvolleyball@gmail.com", "lieu": "Collège P.E. Victor", "ville": "Vidauban", "organisateur": "Vidauban Volley-Ball", "lien": "", "remarque": ""}, {"id": 2, "code": "PIT002", "date": "2026-11-22", "heure": "14:00", "date_limite": "2026-11-20", "email": "csb.volley83@gmail.com", "lieu": "Gymnase Jean Marcel", "ville": "Brignoles", "organisateur": "Club Sportif Brignolais", "lien": "", "remarque": ""}, {"id": 3, "code": "PIT003", "date": "2026-12-06", "heure": "14:00", "date_limite": "2026-12-04", "email": "lelucvolleyball@gmail.com", "lieu": "Gymnase Jean-Yves Gosse", "ville": "Le Luc", "organisateur": "Le Luc VB", "lien": "", "remarque": ""}, {"id": 4, "code": "PIT004", "date": "2027-01-16", "heure": "", "date_limite": null, "email": "", "lieu": "", "ville": "", "organisateur": "", "lien": "", "remarque": ""}, {"id": 5, "code": "PIT005", "date": "2027-02-07", "heure": "10:00", "date_limite": null, "email": "", "lieu": "", "ville": "", "organisateur": "", "lien": "", "remarque": ""}, {"id": 6, "code": "PIT006", "date": "2027-03-13", "heure": "", "date_limite": null, "email": "", "lieu": "", "ville": "", "organisateur": "", "lien": "", "remarque": ""}, {"id": 7, "code": "PIT007", "date": "2027-04-03", "heure": "", "date_limite": null, "email": "", "lieu": "", "ville": "", "organisateur": "", "lien": "", "remarque": ""}, {"id": 8, "code": "PIT008", "date": "2027-05-16", "heure": "14:00", "date_limite": "2027-05-14", "email": "volley83@gmail.com", "lieu": "Gymnase Jean-Yves Gosse", "ville": "Le Luc", "organisateur": "Comité du Var de Volley-Ball", "lien": "", "remarque": ""}]
+        plateaux: [{"id": 1, "code": "PIT001", "date": "2026-10-10", "heure": "13:30", "date_limite": "2026-10-09", "email": "vidaubanvolleyball@gmail.com", "lieu": "Collège P.E. Victor", "ville": "Vidauban", "organisateur": "Vidauban Volley-Ball", "lien": "", "remarque": ""}, {"id": 2, "code": "PIT002", "date": "2026-11-22", "heure": "14:00", "date_limite": "2026-11-20", "email": "csb.volley83@gmail.com", "lieu": "Gymnase Jean Marcel", "ville": "Brignoles", "organisateur": "Club Sportif Brignolais", "lien": "", "remarque": ""}, {"id": 3, "code": "PIT003", "date": "2026-12-06", "heure": "14:00", "date_limite": "2026-12-04", "email": "lelucvolleyball@gmail.com", "lieu": "Gymnase Jean-Yves Gosse", "ville": "Le Luc", "organisateur": "Le Luc Volley-Ball", "lien": "", "remarque": ""}, {"id": 4, "code": "PIT004", "date": "2027-01-16", "heure": "", "date_limite": null, "email": "", "lieu": "", "ville": "", "organisateur": "", "lien": "", "remarque": ""}, {"id": 5, "code": "PIT005", "date": "2027-02-07", "heure": "10:00", "date_limite": "2027-02-05", "email": "csb.volley83@gmail.com", "lieu": "Gymnase Jean Marcel", "ville": "Brignoles", "organisateur": "Club Sportif Brignolais", "lien": "", "remarque": ""}, {"id": 6, "code": "PIT006", "date": "2027-03-13", "heure": "", "date_limite": null, "email": "", "lieu": "", "ville": "", "organisateur": "", "lien": "", "remarque": ""}, {"id": 7, "code": "PIT007", "date": "2027-04-03", "heure": "", "date_limite": null, "email": "", "lieu": "", "ville": "", "organisateur": "", "lien": "", "remarque": ""}, {"id": 8, "code": "PIT008", "date": "2027-05-16", "heure": "14:00", "date_limite": "2027-05-14", "email": "volley83@gmail.com", "lieu": "Gymnase Jean-Yves Gosse", "ville": "Le Luc", "organisateur": "Comité du Var de Volley-Ball", "lien": "", "remarque": ""}]
       };
       if(!this.db.plateaux) this.db.plateaux = [];
       this.demoAuth = false;
@@ -541,7 +541,7 @@ function renderNiveaux(){
   $("#pv-niv").innerHTML = `
     <div class="niv-hero">
       <h2>Le Pitchoun’ Volley, c’est quoi ?</h2>
-      <p>Une compétition pour les 13 ans et moins (M13, M11, M9, M7), avec 9 formes de jeu adaptées et évolutives : 5 en 1 contre 1, puis 4 en 2 contre 2. Chaque enfant joue à son niveau, progresse à son rythme… et change de couleur au fil de ses victoires !${ed?` Créé par la Commission Baby et Mini Volley du Var, le Pitchoun’ Volley vit cette saison sa <b>${ed===1?"1ʳᵉ":ed+"ᵉ"} édition</b>.`:""}</p>
+      <p>Une compétition pour les 13 ans et moins (M13, M11, M9, M7), avec 9 formes de jeu adaptées et évolutives&nbsp;: 5 en 1 contre 1, puis 4 en 2 contre 2. Chaque enfant joue à son niveau, progresse à son rythme… et change de couleur au fil de ses victoires !${ed?` Créé par la Commission Baby et Mini Volley du Var, le Pitchoun’ Volley vit cette saison sa <b>${ed===1?"1ʳᵉ":ed+"ᵉ"} édition</b>.`:""}</p>
       <span class="motto">« Je joue, je bouge ! »</span>
     </div>
     <div class="ladder">
@@ -574,7 +574,7 @@ function renderNiveaux(){
       <div class="card"><h3>🚀 Niveau de départ</h3>
         <ul><li>Par défaut, tout nouvel enfant débute au niveau <b>Blanc</b>.</li>
         <li>Ceux qui le souhaitent peuvent faire un ou plusieurs plateaux au niveau <b>Vert</b> avant.</li>
-        <li>Un M11 2ᵉ année peut démarrer directement au <b>Jaune</b>, un M13 au <b>Bleu</b>.</li>
+        <li>Un M11 peut démarrer directement au <b>niveau Jaune</b>, un M13 au <b>niveau Bleu</b>.</li>
         <li>L'éducateur du club choisit le niveau de départ, selon les aptitudes de l'enfant.</li>
         <li><b>Le niveau atteint en fin de saison est conservé</b> pour la saison suivante.</li></ul>
       </div>
