@@ -488,6 +488,8 @@ async function loadPublic(){
       $("#hist-info").textContent = "Classement figé le " + new Date(a.archived_at).toLocaleDateString("fr-FR") + " · consultation seule";
     }
   } else PUB = await store.classementPublic();
+  // un enfant qui a joué sans couleur renseignée est au niveau Blanc
+  PUB = PUB.map(p => (!p.couleur && (p.plateaux > 0 || p.joues > 0)) ? {...p, couleur:"blanc"} : p);
   const clubs = [...new Set(PUB.map(p=>p.club))].sort(coll.compare);
   $("#f-club").innerHTML = '<option value="">Tous les clubs</option>' + clubs.map(c=>`<option>${esc(c)}</option>`).join("");
   $("#f-col").innerHTML = '<option value="">Toutes les couleurs</option>' + NIVEAUX.map(([k,l])=>`<option value="${k}">${l}</option>`).join("");
@@ -826,6 +828,7 @@ $("#dlg-plateau").addEventListener("close", ()=>{
   if($("#dlg-plateau").returnValue!=="ok" || !plateauTarget) return;
   const p = plateauTarget, g = N($("#dp-g").value), j = N($("#dp-j").value);
   p.plateaux += 1; p.gagnes += g; p.joues += Math.max(j,g);
+  if(!p.couleur) p.couleur = "blanc";   // premier plateau : niveau Blanc par défaut
   queueSave(p); renderAdmin();
 });
 
