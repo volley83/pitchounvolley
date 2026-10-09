@@ -27,11 +27,11 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-
 header{background:#fff;color:var(--ink);padding:14px 16px 12px;position:relative;box-shadow:0 1px 0 var(--line)}
 header::after{content:"";position:absolute;left:0;right:0;bottom:-6px;height:6px;
   background:linear-gradient(90deg,#2e9e44 0 11.1%,#e9ecf1 11.1% 22.2%,#f5d000 22.2% 33.3%,#1f78d1 33.3% 44.4%,#f28c1b 44.4% 55.5%,#d62828 55.5% 66.6%,#b0703a 66.6% 77.7%,#b8bec6 77.7% 88.8%,#d4af37 88.8% 100%)}
-.hd{display:flex;align-items:center;gap:16px}
-.hd-title{flex:1;text-align:center;min-width:0}
-.logo-comite{height:100px;width:auto;display:block}
+.hd{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:16px}
+.hd-title{text-align:center;min-width:0}
+.logo-comite{height:auto;width:auto;max-height:100px;max-width:100%;display:block}
 .logo-comite.sq{display:none}
-.logo-comm{height:112px;width:112px;display:block}
+.logo-comm{height:112px;width:112px;display:block;justify-self:end}
 main{margin-top:6px}
 .wrap{max-width:1100px;margin:0 auto}
 h1{font:800 clamp(40px,5vw,60px)/1 "Baloo 2",system-ui,sans-serif;margin:0;color:var(--brand);letter-spacing:.3px}
@@ -120,10 +120,10 @@ dialog input{width:100%}
 .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
 .hide{display:none!important}
 @media (max-width:900px){
-  .hd{flex-wrap:wrap;justify-content:space-between;row-gap:4px}
+  .hd{display:flex;flex-wrap:wrap;justify-content:space-between;row-gap:4px}
   .hd-title{order:3;flex-basis:100%}
   .logo-comm{order:2;height:84px;width:84px}
-  .logo-comite.lg{height:76px}
+  .logo-comite.lg{max-height:76px}
   h1{font-size:clamp(32px,8.5vw,52px);white-space:nowrap}
 }
 @media (max-width:640px){
