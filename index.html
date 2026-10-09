@@ -258,6 +258,7 @@ dialog input{width:100%}
     <div id="pv-cal" class="hide"></div>
     <div id="pv-niv" class="hide"></div>
     <div id="pv-classement">
+    <div id="hero-live"></div>
     <div class="stats" id="pub-stats"></div>
     <div class="card">
       <div class="toolbar">
@@ -475,6 +476,7 @@ async function loadPublic(){
   $("#pv-niv").classList.toggle("hide", pubMode!=="niv");
   $("#pv-classement").classList.toggle("hide", pubMode==="cal" || pubMode==="niv");
   document.querySelectorAll(".ptabs .tab").forEach(b=>b.classList.toggle("on", b.dataset.p===pubMode));
+  $("#hero-live").innerHTML = pubMode==="live" ? heroHTML() : "";
   if(pubMode==="niv"){ renderNiveaux(); return; }
   if(pubMode==="cal"){ await renderCalendrier(); return; }
   if(pubMode==="hist"){
@@ -533,6 +535,14 @@ function schemaRouge(){
   </div>
   <p class="niv-note">Le joueur A joue obligatoirement le 1er et le 3ᵉ ballon, le joueur B le 2ᵉ. Et ainsi de suite à chaque échange.</p>`;
 }
+function heroHTML(){
+  const ed = edition($("#saison").textContent);
+  return `    <div class="niv-hero">
+      <h2>Le Pitchoun’ Volley, c’est quoi ?</h2>
+      <p>Une compétition pour les enfants de 4 à 13 ans (M13, M11, M9), avec 9 formes de jeu adaptées et évolutives&nbsp;: 5 en 1 contre 1, puis 4 en 2 contre 2. Chaque enfant joue à son niveau, progresse à son rythme… et change de couleur au fil de ses victoires !${ed?` Créé par la Commission Baby et Mini Volley du Var, le Pitchoun’ Volley vit cette saison sa <b>${ed===1?"1ʳᵉ":ed+"ᵉ"} édition</b>.`:""}</p>
+      <span class="motto">« Je joue, je bouge ! »</span>
+    </div>`;
+}
 function renderNiveaux(){
   const lv = (l) => `<button class="lv ${l.n===nivSel?"on":""}" data-n="${l.n}" title="Niveau ${l.n} – ${LBL[l.k]}">
       <span class="big" style="background:${NIVCOL[l.k]};color:${NIVTXT[l.k]}">${l.n}</span>${LBL[l.k]}</button>`;
@@ -542,11 +552,7 @@ function renderNiveaux(){
   const sel = NIVDATA[nivSel];
   const ed = edition($("#saison").textContent);
   $("#pv-niv").innerHTML = `
-    <div class="niv-hero">
-      <h2>Le Pitchoun’ Volley, c’est quoi ?</h2>
-      <p>Une compétition pour les 13 ans et moins (M13, M11, M9, M7), avec 9 formes de jeu adaptées et évolutives&nbsp;: 5 en 1 contre 1, puis 4 en 2 contre 2. Chaque enfant joue à son niveau, progresse à son rythme… et change de couleur au fil de ses victoires !${ed?` Créé par la Commission Baby et Mini Volley du Var, le Pitchoun’ Volley vit cette saison sa <b>${ed===1?"1ʳᵉ":ed+"ᵉ"} édition</b>.`:""}</p>
-      <span class="motto">« Je joue, je bouge ! »</span>
-    </div>
+    ${heroHTML()}
     <div class="ladder">
       <div class="ladder-grp"><h4>1 contre 1 · filet à 2,30 m</h4><div class="ladder-row">${NIVDATA.slice(0,5).map(lv).join("")}</div></div>
       <div class="ladder-grp"><h4>2 contre 2 · filet à 2,10 m</h4><div class="ladder-row">${NIVDATA.slice(5).map(lv).join("")}</div></div>
