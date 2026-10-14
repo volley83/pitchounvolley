@@ -173,7 +173,8 @@ footer a{color:var(--muted)}
 .orga-t input[type=number]{width:58px;text-align:center}.orga-t .t-note{width:170px}
 .grp-row td{background:#f4f6fb;font-weight:700;padding-top:9px}
 tr.bad td{background:#fdecee}
-.rainbow{font-size:15px;display:inline-block;animation:pop 1.6s ease-in-out infinite}
+.rainbow{font-size:14px;display:inline-flex;align-items:center;gap:2px;margin-left:4px;padding:1px 7px 1px 5px;border-radius:12px;background:linear-gradient(90deg,#e8f6ea,#fff7c2,#e6f0fb);border:1px solid #e2c400;animation:pop 1.6s ease-in-out infinite;white-space:nowrap}
+.rainbow b{font-size:12px;color:#2b3589;font-weight:800}
 @keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 @media (prefers-reduced-motion:reduce){.rainbow{animation:none}}
 tr.proposed td{background:#fffbe0}
@@ -442,7 +443,7 @@ const store = {
       const tous = this.db.reglages.public_tous === "oui";
       return this.db.joueurs.filter(j=>tous || j.plateaux>0).map(j=>({nom:j.nom,prenom:j.prenom,club:cl[j.club]||j.club,
         plateaux:j.plateaux,gagnes:j.gagnes,joues:j.joues,arc_en_ciel:j.arc_en_ciel,couleur:j.couleur,demi:j.demi,
-        passage_recent: !!j.passage_plateau && j.passage_plateau === ((this.db.plateaux||[]).filter(p=>p.statut==="valide").sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id-a.id)[0]||{}).id}));
+        passage_recent: !!j.passage_plateau && j.passage_plateau === ((this.db.plateaux||[]).filter(p=>p.statut==="valide").sort((a,b)=>(b.date||"").localeCompare(a.date||"")||b.id-a.id)[0]||{}).id, passage_nb: j.passage_nb||1}));
     }
     const {data,error} = await sb.from("pitchoun_classement").select("*"); if(error) throw error; return data;
   },
@@ -532,7 +533,7 @@ const store = {
 let PUB = [], pubSort = {k:"nom", dir:1}, pubMode = "live";
 function renderLegend(){
   $("#legend").innerHTML = NIVEAUX.map(([k,l])=>`<span class="lvl"><span class="dot c-${k}"></span>${l}</span>`).join("")
-    + `<span class="lvl"><span class="half h-jaune"></span>½ = à mi-chemin de la couleur</span><span class="lvl">🌈 = nouvelle couleur au dernier plateau</span>`;
+    + `<span class="lvl"><span class="half h-jaune"></span>½ = à mi-chemin de la couleur</span><span class="lvl">🌈 +1 = nouvelle couleur au dernier plateau</span>`;
 }
 async function loadPublic(){
   $("#hist-bar").classList.toggle("hide", pubMode!=="hist");
@@ -733,7 +734,7 @@ function renderPublic(){
     if(alpha && L!==last){ html += `<tr><td colspan="7" class="letter">${esc(L)}</td></tr>`; last=L; }
     html += `<tr><td><span class="nom">${esc(p.nom)}</span> ${esc(p.prenom)}<div class="club show-sm">${esc(p.club)}</div></td><td class="club hide-sm">${esc(p.club)}</td>
       <td class="num">${p.plateaux}</td><td class="num">${p.gagnes}</td><td class="num">${p.joues}</td>
-      <td class="num hide-sm">${p.arc_en_ciel||""}</td><td>${lvlHTML(p.couleur,p.demi)}${p.passage_recent?' <span class="rainbow" title="Nouvelle couleur au dernier plateau !">🌈</span>':""}</td></tr>`;
+      <td class="num hide-sm">${p.arc_en_ciel||""}</td><td>${lvlHTML(p.couleur,p.demi)}${p.passage_recent?` <span class="rainbow" title="Nouvelle couleur au dernier plateau !">🌈<b>+${p.passage_nb||1}</b></span>`:""}</td></tr>`;
   }
   $("#pub-table tbody").innerHTML = html || `<tr><td colspan="7" class="muted">${!PUB.length && pubMode==="live" ? "Aucun enfant n'a encore joué de plateau cette saison : le classement apparaîtra après le premier plateau." : "Aucun joueur trouvé."}</td></tr>`;
   document.querySelectorAll("#pub-table th").forEach(th=>{
@@ -1184,7 +1185,7 @@ Object.assign(store, {
       const cav = j.couleur || ins.couleur || (ins.nouveau ? null : "blanc"), cap = r.couleur_apres || null, dap = r.demi_apres || null;
       j.plateaux += npl; j.gagnes += g1+g2; j.joues += j1+j2;
       if(cav && cap) j.arc_en_ciel += Math.max(0, rg(cap)-rg(cav));
-      if(cav && cap && rg(cap) > rg(cav)) j.passage_plateau = plateau;
+      if(cav && cap && rg(cap) > rg(cav)){ j.passage_plateau = plateau; j.passage_nb = rg(cap) - rg(cav); }
       j.couleur = cap || j.couleur || (npl ? "blanc" : null);
       j.demi = dap && rg(dap) > rg(j.couleur) ? dap : null;
       if(r.presque!==undefined) j.presque = !!r.presque;
