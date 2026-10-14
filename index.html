@@ -175,6 +175,10 @@ footer a{color:var(--muted)}
 tr.bad td{background:#fdecee}
 .rainbow{font-size:14px;display:inline-flex;align-items:center;gap:2px;margin-left:4px;padding:1px 7px 1px 5px;border-radius:12px;background:linear-gradient(90deg,#e8f6ea,#fff7c2,#e6f0fb);border:1px solid #e2c400;animation:pop 1.6s ease-in-out infinite;white-space:nowrap}
 .rainbow b{font-size:12px;color:#2b3589;font-weight:800}
+.coulbox{display:flex;align-items:center;gap:8px}
+.coulbox > .lvl,.coulbox > .muted{min-width:150px}
+.coulbox .rainbow{margin-left:0}
+@media (max-width:640px){.coulbox{flex-direction:column;align-items:flex-start;gap:3px}.coulbox > .lvl,.coulbox > .muted{min-width:0}}
 @keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.25)}}
 @media (prefers-reduced-motion:reduce){.rainbow{animation:none}}
 tr.proposed td{background:#fffbe0}
@@ -734,7 +738,7 @@ function renderPublic(){
     if(alpha && L!==last){ html += `<tr><td colspan="7" class="letter">${esc(L)}</td></tr>`; last=L; }
     html += `<tr><td><span class="nom">${esc(p.nom)}</span> ${esc(p.prenom)}<div class="club show-sm">${esc(p.club)}</div></td><td class="club hide-sm">${esc(p.club)}</td>
       <td class="num">${p.plateaux}</td><td class="num">${p.gagnes}</td><td class="num">${p.joues}</td>
-      <td class="num hide-sm">${p.arc_en_ciel||""}</td><td>${lvlHTML(p.couleur,p.demi)}${p.passage_recent?` <span class="rainbow" title="Nouvelle couleur au dernier plateau !">🌈<b>+${p.passage_nb||1}</b></span>`:""}</td></tr>`;
+      <td class="num hide-sm">${p.arc_en_ciel||""}</td><td><div class="coulbox">${lvlHTML(p.couleur,p.demi)}${p.passage_recent?`<span class="rainbow" title="Nouvelle couleur au dernier plateau !">🌈<b>+${p.passage_nb||1}</b></span>`:""}</div></td></tr>`;
   }
   $("#pub-table tbody").innerHTML = html || `<tr><td colspan="7" class="muted">${!PUB.length && pubMode==="live" ? "Aucun enfant n'a encore joué de plateau cette saison : le classement apparaîtra après le premier plateau." : "Aucun joueur trouvé."}</td></tr>`;
   document.querySelectorAll("#pub-table th").forEach(th=>{
