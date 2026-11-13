@@ -195,6 +195,23 @@ details.card summary{cursor:pointer}
   .orga-t input{border:0;width:40px}
 }
 /* calendrier */
+/* Bandeau « prochain plateau » (page d'accueil) */
+.np{display:grid;grid-template-columns:auto 1fr auto;gap:18px;align-items:center;background:#fffdf0;border:2px solid #e2c400;border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 0 0 4px #fbf3b5}
+.np .pl-date{background:var(--brand);min-width:86px;padding:10px 6px}
+.np .pl-date .wd,.np .pl-date .y{color:#cfd5f5}.np .pl-date .d,.np .pl-date .m{color:#fff}
+.np-k{font:700 14px/1 "Barlow Condensed",sans-serif;letter-spacing:2px;text-transform:uppercase;color:#8a6a00}
+.np-k b{background:#f9f95a;color:#141c38;border-radius:20px;padding:2px 9px;letter-spacing:.5px;margin-left:6px}
+.np h2{margin:4px 0 6px;font:800 27px/1.1 "Baloo 2",system-ui,sans-serif;color:var(--brand)}
+.np .pl-info{margin-top:0;font-size:15px}
+.np-act{display:flex;flex-direction:column;gap:6px;align-items:flex-end;text-align:right}
+.np-act .btn-mail{font-size:17px;padding:12px 18px}
+.np-act .np-cal{color:var(--brand);font-weight:600;font-size:14px}
+@media (max-width:720px){.np{grid-template-columns:auto 1fr}.np-act{grid-column:1/-1;align-items:stretch;text-align:center}.np-act .btn-mail{text-align:center}.np h2{font-size:22px}}
+/* Mail de rappel (admin) */
+.rap label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+.rap textarea,.rap input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;background:#fff}
+.rap textarea.mono{min-height:440px;font:13px/1.45 ui-monospace,Consolas,monospace}
+.rap textarea.adr{min-height:56px;font-size:12.5px}
 .cal-intro{margin:0 0 12px;color:var(--muted)}
 .pl{display:grid;grid-template-columns:86px 1fr auto;gap:16px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--brand);border-radius:12px;padding:14px 16px;margin-bottom:10px}
 .pl.past{opacity:.6;border-left-color:#b8bec6}
@@ -310,6 +327,7 @@ dialog input{width:100%}
     <div id="pv-cal" class="hide"></div>
     <div id="pv-niv" class="hide"></div>
     <div id="pv-classement">
+    <div id="next-live"></div>
     <div id="hero-live"></div>
     <div class="stats" id="pub-stats"></div>
     <div class="card legend" id="legend"></div>
@@ -546,6 +564,8 @@ async function loadPublic(){
   $("#pv-classement").classList.toggle("hide", pubMode==="cal" || pubMode==="niv");
   document.querySelectorAll(".ptabs .tab").forEach(b=>b.classList.toggle("on", b.dataset.p===pubMode));
   $("#hero-live").innerHTML = pubMode==="live" ? heroHTML() : "";
+  $("#next-live").innerHTML = "";
+  if(pubMode==="live") store.plateaux().then(l=>{ if(pubMode==="live") renderProchain(l); }).catch(e=>console.error(e));
   if(pubMode==="niv"){ renderNiveaux(); return; }
   if(pubMode==="cal"){ await renderCalendrier(); return; }
   if(pubMode==="hist"){
@@ -679,6 +699,39 @@ const dLocal = s => { if(!s) return null; const [y,m,d] = s.split("-").map(Numbe
 const today0 = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
 const fmtD = (d,o) => d.toLocaleDateString("fr-FR", o);
 const fmtH = h => h ? h.replace(":", "h") : "";
+
+/* ---------------- Bandeau « prochain plateau » (page d'accueil) ---------------- */
+const calTri = list => list.filter(p=>p.date).sort((a,b)=>a.date.localeCompare(b.date));
+const plNom = (list,i) => i===list.length-1 && list.length>1 ? "Plateau Final" : "Plateau "+(i+1);
+function renderProchain(all){
+  const list = calTri(all), t0 = today0(), i = list.findIndex(p => dLocal(p.date) >= t0);
+  if(i < 0) return;
+  const p = list[i], d = dLocal(p.date), lim = dLocal(p.date_limite), jours = Math.round((d - t0)/864e5);
+  const quand = jours===0 ? "aujourd'hui" : jours===1 ? "demain" : `dans ${jours} jours`;
+  const lieu = [p.lieu, p.ville].filter(Boolean).join(", ");
+  const maps = "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent([p.lieu, p.ville].filter(Boolean).join(" "));
+  let act;
+  if(plOpen(p)) act = `<a class="btn-mail" href="#inscription/${p.id}">✍️ Inscrire mes joueurs</a>
+      <span class="pl-lim">${lim ? "Inscriptions en ligne jusqu'au " + fmtD(lim,{weekday:"long",day:"numeric",month:"long"}) + " inclus" : ""}</span>`;
+  else if(lim && lim < t0) act = `<span class="pl-lim closed">Inscriptions closes</span>`;
+  else act = `<span class="pl-lim">Inscriptions bientôt ouvertes</span>`;
+  $("#next-live").innerHTML = `<section class="np">
+    <div class="pl-date"><div class="wd">${fmtD(d,{weekday:"short"})}</div><div class="d">${d.getDate()}</div>
+      <div class="m">${fmtD(d,{month:"short"})}</div><div class="y">${d.getFullYear()}</div></div>
+    <div>
+      <div class="np-k">Prochain plateau <b>${quand}</b></div>
+      <h2>${plNom(list,i)}${plNom(list,i)==="Plateau Final"?" 🏆":""}${p.ville?" à "+esc(p.ville):""}</h2>
+      <div class="pl-info">
+        <span>📅 ${fmtD(d,{weekday:"long",day:"numeric",month:"long"})}${p.heure?" · début des rencontres à "+fmtH(esc(p.heure)):""}</span>
+        <span>📍 ${lieu ? `<a href="${maps}" target="_blank" rel="noopener">${esc(lieu)}</a>` : '<span class="muted">Lieu à confirmer</span>'}</span>
+        ${p.organisateur?`<span>🏐 Organisé par ${esc(p.organisateur)}</span>`:""}
+        ${p.remarque?`<span class="muted">ℹ ${esc(p.remarque)}</span>`:""}
+      </div>
+    </div>
+    <div class="np-act">${act}<a href="#" class="np-cal" id="np-cal">📅 Voir tout le calendrier</a></div>
+  </section>`;
+  $("#np-cal").onclick = e => { e.preventDefault(); pubMode = "cal"; loadPublic().catch(err=>console.error(err)); window.scrollTo(0,0); };
+}
 async function renderCalendrier(){
   const list = (await store.plateaux()).filter(p=>p.date).sort((a,b)=>a.date.localeCompare(b.date));
   const t0 = today0();
@@ -800,6 +853,7 @@ function renderTabs(){
   $("#tabs").innerHTML = t + `<button class="tab ${tab==="#clubs"?"on":""}" data-t="#clubs">🏆 Classements clubs</button>
     <button class="tab ${tab==="#cal"?"on":""}" data-t="#cal">📅 Calendrier</button>
     <button class="tab ${tab==="#val"?"on":""}" data-t="#val">✅ Plateaux &amp; résultats</button>
+    <button class="tab ${tab==="#rappel"?"on":""}" data-t="#rappel">✉ Mail de rappel</button>
     <button class="tab ${tab==="#reglages"?"on":""}" data-t="#reglages">⚙ Réglages</button>`;
   $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ tab=b.dataset.t; VAL=null; renderAdmin(); });
 }
@@ -1032,12 +1086,129 @@ async function renderCalAdmin(){
       await renderCalAdmin(); setSave("ok","✓ Plateau ajouté"); }catch(e){ console.error(e); setSave("err","⚠ Erreur d'ajout"); }
   };
 }
+
+/* ---------------- Mail de rappel du prochain plateau (admin) ---------------- */
+const SITE_URL = "https://volley83.github.io/pitchounvolley/";
+const loc = { get(k,d){ try{ return JSON.parse(localStorage.getItem(k)) ?? d; }catch(e){ return d; } }, set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} } };
+const adresses = l => [...new Set(l.flatMap(m=>String(m||"").split(/[,;\s]+/)).map(m=>m.trim().toLowerCase()).filter(m=>/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(m)))];
+const hMail = h => { const m = String(h||"").match(/(\d{1,2})\s*[:hH]\s*(\d{2})?/); return m ? {h:+m[1], m:+(m[2]||0)} : null; };
+const hTxt = (t,moins=0) => { let n = t.h*60 + t.m - moins; return Math.floor(n/60) + "h" + (n%60 ? String(n%60).padStart(2,"0") : ""); };
+const cap1 = s => s ? s[0].toUpperCase() + s.slice(1) : s;
+Object.assign(store, {
+  async contactsInscriptions(){
+    if(DEMO){ this.demoIns(); return this.db.inscriptions.map(x=>x.contact_email); }
+    const {data,error} = await sb.from("pitchoun_inscriptions").select("contact_email"); if(error) throw error; return data.map(x=>x.contact_email);
+  },
+  // adresses des clubs : fiches clubs de la Facturation (mot de passe commun du Comité)
+  async mailsClubs(pwd){
+    if(DEMO) return {};
+    const {data,error} = await sb.rpc("chp_admin_mails",{pwd}); if(error) throw new Error(/refus/i.test(error.message) ? "Mot de passe incorrect" : error.message); return data || {};
+  }
+});
+function mailRappelPit(list, i){
+  const p = list[i], d = dLocal(p.date), lim = dLocal(p.date_limite), jours = Math.round((d - today0())/864e5);
+  const jour = fmtD(d,{weekday:"long",day:"numeric",month:"long"});
+  const ou = p.ville ? ` à ${p.ville}${p.lieu ? " ("+p.lieu+")" : ""}` : (p.lieu ? " à "+p.lieu : "");
+  const t = hMail(p.heure);
+  const prec = list.slice(0,i).reverse().find(x=>x.statut==="valide");
+  return `Bonjour à tous,
+
+Je vous rappelle que le prochain plateau de Pitchoun' Volley aura lieu ${jours>=0 && jours<=6 ? "ce" : "le"} ${jour}${ou}.
+${t ? `Début des rencontres à ${hTxt(t)}. Rendez-vous entre ${hTxt(t,30)} et ${hTxt(t,15)} maximum pour valider vos inscriptions.` : "L'horaire vous sera précisé très prochainement."}
+
+NOUVEAU : les inscriptions se font désormais directement en ligne${lim ? `, au maximum ${fmtD(lim,{weekday:"long",day:"numeric",month:"long"})} au soir` : ""}, sur le site du Pitchoun' Volley :
+${SITE_URL}#inscription/${p.id}
+
+Il suffit de choisir votre club : les enfants qui ont déjà participé apparaissent dans une liste, avec leur couleur, et il n'y a plus qu'à cocher ceux qui seront présents. Les enfants qui ne sont pas encore dans la liste s'ajoutent à la main (nom, prénom et couleur de départ).
+Vous pouvez revenir sur cette page jusqu'à la date limite pour compléter votre inscription. Pour retirer un enfant déjà inscrit, merci de prévenir le club organisateur${p.email ? " ("+p.email+")" : ""}.
+
+Toutes les informations sur le Pitchoun' Volley se trouvent maintenant sur ce site : calendrier, inscriptions, résultats, classements, niveaux de jeu et règlement.
+${SITE_URL}
+${prec ? `Les classements y sont à jour après le plateau de ${prec.ville || prec.lieu || prec.code}.\n` : ""}
+RAPPEL : Un enfant qui participe à son 1er plateau de la saison, mais qui a participé la ou les saison(s) précédente(s), continue dans la couleur qu'il a atteinte ! Il ne redémarre pas en blanc. Sa couleur est déjà indiquée dans la liste d'inscription.
+
+Merci de partager cette information avec vos éducateurs et parents concernés.
+
+Sportivement,
+
+Clément ROBEAU
+Comité du Var de Volley-Ball`;
+}
+// Gmail n'accepte que du texte brut dans le lien : le mail mis en forme est copié, puis collé (Ctrl+V) dans Gmail.
+// La signature Gmail (Sportivement, nom, logo) est ajoutée par Gmail lui-même : on ne la colle pas une 2e fois.
+async function gmailMisEnForme({bcc="", su="", body=""}){
+  const base = `https://mail.google.com/mail/?view=cm&fs=1${bcc ? "&bcc="+encodeURIComponent(bcc) : ""}&su=${encodeURIComponent(su)}`;
+  const k = body.lastIndexOf("Sportivement,"), court = (k>=0 ? body.slice(0,k) : body).replace(/\s+$/,"");
+  const lien = s => s.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g,'<a href="$1">$1</a>').replace(/([\w.+-]+@[\w-]+\.[\w.-]+)/g, m => `<a href="mailto:${m}">${m}</a>`);
+  const html = `<div style="font-family: Garamond, 'EB Garamond', 'Times New Roman', serif; font-size: 13pt; color: #1a1a1a">${esc(court).split("\n").map(l=>lien(l)||"&nbsp;").join("<br>")}<br><br></div>`;
+  try{
+    await navigator.clipboard.write([new ClipboardItem({"text/html":new Blob([html],{type:"text/html"}), "text/plain":new Blob([court],{type:"text/plain"})})]);
+    window.open(base + "&body=" + encodeURIComponent(">>> Le texte du mail est copié : sélectionnez cette ligne et faites Ctrl+V pour le coller à sa place <<<"), "_blank");
+    setSave("ok","✓ Mail mis en forme copié : dans Gmail, clique dans le message puis Ctrl+V");
+  }catch(e){
+    const url = base + "&body=" + encodeURIComponent(body);
+    if(url.length > 7800){ alert("Le texte est trop long pour Gmail : copie-le depuis cette page et colle-le dans le mail."); window.open(base,"_blank"); }
+    else window.open(url,"_blank");
+    setSave("err","⚠ Copie mise en forme impossible dans ce navigateur : texte simple envoyé à Gmail");
+  }
+}
+let RAP = null;
+async function renderRappel(){
+  $("#view").innerHTML = '<div class="card muted">Chargement…</div>';
+  let list, contacts = [];
+  try{ list = calTri(await store.plateaux()); }catch(e){ setSave("err","⚠ Impossible de charger le calendrier"); return; }
+  try{ contacts = await store.contactsInscriptions(); }catch(e){ console.error(e); }
+  const t0 = today0(), avenir = list.filter(p=>dLocal(p.date) >= t0);
+  if(!avenir.length){ $("#view").innerHTML = '<div class="card">Aucun plateau à venir dans le calendrier : ajoute d\'abord le prochain plateau dans l\'onglet « Calendrier ».</div>'; return; }
+  if(!RAP || !avenir.some(p=>p.id===RAP)) RAP = avenir[0].id;
+  const i = list.findIndex(p=>p.id===RAP), p = list[i], d = dLocal(p.date);
+  const clubsFac = loc.get("pit_rappel_clubs", null), tousClubs = loc.get("pit_rappel_tous", false), extra = loc.get("pit_rappel_extra", "");
+  const codes = new Set(A.clubs.map(c=>String(c.code).toUpperCase()));
+  const duFac = clubsFac ? Object.entries(clubsFac).filter(([c])=>tousClubs || codes.has(String(c).toUpperCase())).map(([,m])=>m) : [];
+  const auto = adresses(duFac.concat(contacts, list.map(x=>x.email)));
+  const manque = [!p.heure && "l'heure", !p.lieu && !p.ville && "le lieu", !p.date_limite && "la date limite d'inscription"].filter(Boolean);
+  $("#view").innerHTML = `<div class="card rap">
+    <h3 style="margin:0">Mail de rappel du prochain plateau</h3>
+    <p class="muted" style="margin:4px 0 0">Mail aux clubs, avec le lien d'inscription en ligne. Le texte est proposé d'après le calendrier : tu peux le modifier avant de l'ouvrir dans Gmail.</p>
+    <label for="rp-pl">Plateau</label>
+    <select id="rp-pl">${avenir.map(x=>`<option value="${x.id}" ${x.id===RAP?"selected":""}>${esc(plNom(list,list.indexOf(x))+" – "+plLabel(x))}</option>`).join("")}</select>
+    ${manque.length?`<div class="banner" style="margin:12px 0 0">Il manque ${esc(manque.join(", "))} pour ce plateau : complète l'onglet « Calendrier » avant d'envoyer le rappel.</div>`:""}
+    ${plOpen(p)?"":`<div class="banner" style="margin:12px 0 0">Les inscriptions en ligne ne sont pas ouvertes pour ce plateau (date limite absente ou dépassée).</div>`}
+    <label>Destinataires en Cci (${auto.length} adresse${auto.length>1?"s":""} : ${clubsFac?"fiches clubs de la Facturation, ":""}contacts des inscriptions de la saison et clubs organisateurs)</label>
+    <textarea readonly class="adr">${esc(auto.join(", "))}</textarea>
+    <div class="toolbar" style="margin:8px 0 0">
+      <input type="password" id="rp-pwd" placeholder="Mot de passe du Comité" autocomplete="off" style="width:210px">
+      <button class="ghost small" id="rp-clubs">${clubsFac?"↻ Mettre à jour les adresses des clubs":"＋ Ajouter les adresses des clubs (Facturation)"}</button>
+      ${clubsFac?`<label style="margin:0;font-weight:500"><input type="checkbox" id="rp-tous" ${tousClubs?"checked":""}> tous les clubs du Comité, pas seulement ceux du Pitchoun'</label>`:""}
+    </div>
+    <label for="rp-extra">Autres destinataires (membres du Comité, éducateurs…) · gardés sur cet ordinateur</label>
+    <textarea id="rp-extra" class="adr" placeholder="adresse1@…, adresse2@…">${esc(extra)}</textarea>
+    <label for="rp-su">Objet</label>
+    <input type="text" id="rp-su" value="${esc(`Pitchoun' Volley – ${cap1(plNom(list,i))} du ${fmtD(d,{weekday:"long",day:"numeric",month:"long"})}${p.ville?" à "+p.ville:""} – Inscriptions en ligne`)}">
+    <label for="rp-body">Message</label>
+    <textarea id="rp-body" class="mono">${esc(mailRappelPit(list,i))}</textarea>
+    <div class="row" style="justify-content:flex-start"><button id="rp-go">✉ Ouvrir dans Gmail</button><button class="ghost" id="rp-copy">📋 Copier les adresses</button></div>
+  </div>`;
+  const tous = () => adresses(auto.concat($("#rp-extra").value));
+  $("#rp-pl").onchange = e => { RAP = +e.target.value; renderRappel(); };
+  $("#rp-extra").oninput = () => loc.set("pit_rappel_extra", $("#rp-extra").value);
+  if($("#rp-tous")) $("#rp-tous").onchange = e => { loc.set("pit_rappel_tous", e.target.checked); renderRappel(); };
+  $("#rp-clubs").onclick = async () => {
+    const pwd = $("#rp-pwd").value; if(!pwd){ $("#rp-pwd").focus(); setSave("err","Saisis le mot de passe du Comité (celui de la Facturation)"); return; }
+    setSave("wait","Chargement des adresses…");
+    try{ const m = await store.mailsClubs(pwd); loc.set("pit_rappel_clubs", m); setSave("ok",`✓ Adresses de ${Object.keys(m).length} clubs récupérées`); renderRappel(); }
+    catch(e){ setSave("err","⚠ "+e.message); }
+  };
+  $("#rp-copy").onclick = async () => { try{ await navigator.clipboard.writeText(tous().join(", ")); setSave("ok",`✓ ${tous().length} adresses copiées`); }catch(e){ setSave("err","⚠ Copie impossible"); } };
+  $("#rp-go").onclick = () => gmailMisEnForme({bcc:tous().join(","), su:$("#rp-su").value, body:$("#rp-body").value});
+}
 function renderAdmin(){
   renderTabs();
   if(tab==="#clubs") renderClubsRanking();
   else if(tab==="#reglages") renderReglages();
   else if(tab==="#cal") renderCalAdmin();
   else if(tab==="#val") renderValAdmin();
+  else if(tab==="#rappel") renderRappel();
   else renderClub(tab);
 }
 async function openAdmin(){
