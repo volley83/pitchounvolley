@@ -854,6 +854,7 @@ function renderTabs(){
   }).join("");
   $("#tabs").innerHTML = t + `<button class="tab ${tab==="#clubs"?"on":""}" data-t="#clubs">🏆 Classements clubs</button>
     <button class="tab ${tab==="#cal"?"on":""}" data-t="#cal">📅 Calendrier</button>
+    <button class="tab ${tab==="#ins"?"on":""}" data-t="#ins">📝 Inscriptions</button>
     <button class="tab ${tab==="#val"?"on":""}" data-t="#val">✅ Plateaux &amp; résultats</button>
     <button class="tab ${tab==="#rappel"?"on":""}" data-t="#rappel">✉ Mail de rappel</button>
     <button class="tab ${tab==="#reglages"?"on":""}" data-t="#reglages">⚙ Réglages</button>`;
@@ -1204,6 +1205,57 @@ async function renderRappel(){
   $("#rp-copy").onclick = async () => { try{ await navigator.clipboard.writeText(tous().join(", ")); setSave("ok",`✓ ${tous().length} adresses copiées`); }catch(e){ setSave("err","⚠ Copie impossible"); } };
   $("#rp-go").onclick = () => gmailMisEnForme({bcc:tous().join(","), su:$("#rp-su").value, body:$("#rp-body").value});
 }
+/* ---------------- Inscriptions en cours (admin) ---------------- */
+let INSA = null;
+async function renderInsAdmin(){
+  $("#view").innerHTML = '<div class="card muted">Chargement…</div>';
+  let list, cnt;
+  try{ [list, cnt] = await Promise.all([store.plateaux(), store.compteInscriptions()]); list = calTri(list); }
+  catch(e){ console.error(e); setSave("err","⚠ Impossible de charger les plateaux"); return; }
+  const t0 = today0(), avenir = list.filter(p=>p.date && dLocal(p.date) >= t0);
+  const choix = avenir.length ? avenir : list.filter(p=>p.date).slice(-1);
+  if(!choix.length){ $("#view").innerHTML = '<div class="card">Aucun plateau dans le calendrier.</div>'; return; }
+  if(!INSA || !list.some(p=>p.id===INSA)) INSA = choix[0].id;
+  const p = list.find(x=>x.id===INSA);
+  let rows;
+  try{ rows = await store.inscriptionsPlateau(p.id); }catch(e){ console.error(e); setSave("err","⚠ Impossible de charger les inscriptions"); return; }
+  const clubs = Object.fromEntries(A.clubs.map(c=>[c.code,c.nom]));
+  const parClub = {};
+  rows.forEach(r=>{ (parClub[r.club] ||= []).push(r); });
+  const ordre = Object.keys(parClub).sort((a,b)=>coll.compare(clubs[a]||a, clubs[b]||b));
+  const lim = dLocal(p.date_limite), etat = plOpen(p)
+    ? `<span class="badge tbc">Inscriptions ouvertes${lim?" jusqu'au "+esc(fmtD(lim,{weekday:"long",day:"numeric",month:"long"})):""}</span>`
+    : (p.statut||"ouvert")==="ouvert" ? '<span class="badge past">Inscriptions fermées</span>' : '<span class="badge next">Résultats envoyés</span>';
+  const nNew = rows.filter(r=>r.nouveau).length;
+  const parCoul = {}; rows.forEach(r=>{ const c = r.couleur || (r.nouveau ? "" : "blanc"); parCoul[c] = (parCoul[c]||0)+1; });
+  const coulTxt = Object.entries(parCoul).sort((a,b)=>rg(a[0]||null)-rg(b[0]||null))
+    .map(([c,n])=>`<span class="lvl" style="margin-right:12px">${dotHTML(c||null,null)} ${c?esc(LBL[c]||c):"à définir"} : <b>${n}</b></span>`).join("");
+  const contacts = adresses(rows.map(r=>r.contact_email));
+  const opt = list.filter(x=>x.date).map(x=>`<option value="${x.id}" ${x.id===p.id?"selected":""}>${esc(plLabel(x))} (${cnt[x.id]||0})</option>`).join("");
+  const blocs = ordre.map(c=>{
+    const l = parClub[c].sort((a,b)=>rg(a.couleur)-rg(b.couleur) || coll.compare(a.nom,b.nom) || coll.compare(a.prenom,b.prenom));
+    const ct = [...new Map(l.filter(r=>r.contact_nom||r.contact_email||r.contact_tel).map(r=>[(r.contact_email||r.contact_nom||"").toLowerCase(), r])).values()]
+      .map(r=>[r.contact_nom, r.contact_email?`<a href="mailto:${esc(r.contact_email)}">${esc(r.contact_email)}</a>`:"", r.contact_tel?`<a href="tel:${esc(r.contact_tel)}">${esc(r.contact_tel)}</a>`:""].filter(Boolean).map(x=>x===r.contact_nom?esc(x):x).join(" · ")).join("<br>");
+    return `<div style="margin-top:14px">
+      <h3 style="margin:0 0 2px">${esc(clubs[c]||c)} <small class="muted">· ${l.length} enfant${l.length>1?"s":""}</small></h3>
+      ${ct?`<div class="muted" style="font-size:13px;margin-bottom:6px">${ct}</div>`:""}
+      <div class="tablebox"><table class="adm"><tbody>${l.map(r=>`<tr>
+        <td><span class="lvl">${dotHTML(r.couleur || (r.nouveau?null:"blanc"), r.demi)}</span></td>
+        <td><b>${esc(r.nom)}</b> ${esc(r.prenom)}${r.nouveau?' <span class="badge tbc">nouveau</span>':""}${r.ajout_orga?' <span class="badge past">ajouté</span>':""}</td>
+      </tr>`).join("")}</tbody></table></div></div>`;
+  }).join("");
+  $("#view").innerHTML = `<div class="card">
+    <div class="toolbar" style="flex-wrap:wrap"><select id="insa-pl">${opt}</select>${etat}</div>
+    <p style="margin:10px 0 4px"><b>${rows.length}</b> enfant${rows.length>1?"s":""} inscrit${rows.length>1?"s":""} · <b>${ordre.length}</b> club${ordre.length>1?"s":""}${nNew?` · dont <b>${nNew}</b> nouveau${nNew>1?"x":""}`:""}</p>
+    ${rows.length?`<div style="margin:6px 0">${coulTxt}</div>`:""}
+    ${rows.length?`<div class="row" style="justify-content:flex-start"><button class="ghost small" id="insa-copy">📋 Copier les mails des contacts (${contacts.length})</button><button class="ghost small" id="insa-val">✅ Ouvrir dans « Plateaux &amp; résultats »</button></div>`:""}
+    ${blocs || '<p class="muted">Aucune inscription pour le moment.</p>'}
+    <p class="muted" style="font-size:13px;margin-top:14px">Pour retirer un enfant ou en ajouter un, passe par l'onglet « Plateaux &amp; résultats » (bouton « Voir » du plateau).</p>
+  </div>`;
+  $("#insa-pl").onchange = e => { INSA = +e.target.value; renderInsAdmin(); };
+  if($("#insa-copy")) $("#insa-copy").onclick = async () => { try{ await navigator.clipboard.writeText(contacts.join(", ")); setSave("ok",`✓ ${contacts.length} adresses copiées`); }catch(e){ setSave("err","⚠ Copie impossible"); } };
+  if($("#insa-val")) $("#insa-val").onclick = () => { tab = "#val"; VAL = {open:p.id}; renderTabs(); renderValDetail(); };
+}
 function renderAdmin(){
   renderTabs();
   if(tab==="#clubs") renderClubsRanking();
@@ -1211,6 +1263,7 @@ function renderAdmin(){
   else if(tab==="#cal") renderCalAdmin();
   else if(tab==="#val") renderValAdmin();
   else if(tab==="#rappel") renderRappel();
+  else if(tab==="#ins") renderInsAdmin();
   else renderClub(tab);
 }
 async function openAdmin(){
