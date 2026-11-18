@@ -360,9 +360,7 @@ dialog input{width:100%}
     <div id="login" class="card login">
       <h2 style="margin:0 0 6px">Accès Comité</h2>
       <form id="login-form">
-        <label for="email" id="email-lbl">E-mail</label>
-        <input type="email" id="email" autocomplete="username">
-        <label for="pwd">Mot de passe</label>
+        <label for="pwd">Mot de passe du Comité</label>
         <input type="password" id="pwd" autocomplete="current-password">
         <div class="row"><button type="submit">Se connecter</button></div>
         <p id="login-err" class="muted"></p>
@@ -433,7 +431,6 @@ const store = {
   async init(){
     if(DEMO){
       $("#demo-banner").classList.remove("hide");
-      $("#email-lbl").classList.add("hide"); $("#email").classList.add("hide");
       let saved = null;
       try { saved = JSON.parse(localStorage.getItem("pitchoun-demo-v4")); } catch(e){}
       const seed = window.PITCHOUN_SEED || {clubs:[], joueurs:[]};
@@ -470,11 +467,16 @@ const store = {
     const {data,error} = await sb.from("pitchoun_classement").select("*"); if(error) throw error; return data;
   },
   async session(){ if(DEMO) return this.demoAuth; const {data} = await sb.auth.getSession(); return !!data.session; },
-  async login(email,pwd){
+  // mot de passe commun du Comité (le même que TIP, stages, championnats, facturation…)
+  async login(pwd){
     if(DEMO){ if(pwd!=="demo") throw new Error("Mot de passe incorrect"); this.demoAuth=true; return; }
-    const {error} = await sb.auth.signInWithPassword({email,password:pwd}); if(error) throw new Error("Identifiants incorrects");
+    const {data:email,error:e1} = await sb.rpc("pitchoun_login_email",{pwd}); if(e1) throw new Error(e1.message);
+    if(!email) throw new Error("Mot de passe incorrect");
+    const {error} = await sb.auth.signInWithPassword({email,password:pwd}); if(error) throw new Error("Connexion impossible : "+error.message);
+    try{ sessionStorage.setItem("pit_admin",pwd); }catch(e){}
   },
-  async logout(){ if(DEMO){ this.demoAuth=false; return; } await sb.auth.signOut(); },
+  adminPwd(){ try{ return sessionStorage.getItem("pit_admin")||""; }catch(e){ return ""; } },
+  async logout(){ try{ sessionStorage.removeItem("pit_admin"); }catch(e){} if(DEMO){ this.demoAuth=false; return; } await sb.auth.signOut(); },
   async adminData(){
     if(DEMO) return {clubs:[...this.db.clubs], joueurs:this.db.joueurs.map(j=>({...j})), reglages:{...this.db.reglages}, plateaux:(this.db.plateaux||[]).map(p=>({...p}))};
     const [c,j,r,p] = await Promise.all([
@@ -1177,7 +1179,7 @@ async function renderRappel(){
     <label>Destinataires en Cci (${auto.length} adresse${auto.length>1?"s":""} : ${clubsFac?"fiches clubs de la Facturation, ":""}contacts des inscriptions de la saison et clubs organisateurs)</label>
     <textarea readonly class="adr">${esc(auto.join(", "))}</textarea>
     <div class="toolbar" style="margin:8px 0 0">
-      <input type="password" id="rp-pwd" placeholder="Mot de passe du Comité" autocomplete="off" style="width:210px">
+      ${store.adminPwd()?"":`<input type="password" id="rp-pwd" placeholder="Mot de passe du Comité" autocomplete="off" style="width:210px">`}
       <button class="ghost small" id="rp-clubs">${clubsFac?"↻ Mettre à jour les adresses des clubs":"＋ Ajouter les adresses des clubs (Facturation)"}</button>
       ${clubsFac?`<label style="margin:0;font-weight:500"><input type="checkbox" id="rp-tous" ${tousClubs?"checked":""}> tous les clubs du Comité, pas seulement ceux du Pitchoun'</label>`:""}
     </div>
@@ -1194,7 +1196,7 @@ async function renderRappel(){
   $("#rp-extra").oninput = () => loc.set("pit_rappel_extra", $("#rp-extra").value);
   if($("#rp-tous")) $("#rp-tous").onchange = e => { loc.set("pit_rappel_tous", e.target.checked); renderRappel(); };
   $("#rp-clubs").onclick = async () => {
-    const pwd = $("#rp-pwd").value; if(!pwd){ $("#rp-pwd").focus(); setSave("err","Saisis le mot de passe du Comité (celui de la Facturation)"); return; }
+    const pwd = store.adminPwd() || ($("#rp-pwd")?$("#rp-pwd").value:""); if(!pwd){ $("#rp-pwd")?.focus(); setSave("err","Saisis le mot de passe du Comité"); return; }
     setSave("wait","Chargement des adresses…");
     try{ const m = await store.mailsClubs(pwd); loc.set("pit_rappel_clubs", m); setSave("ok",`✓ Adresses de ${Object.keys(m).length} clubs récupérées`); renderRappel(); }
     catch(e){ setSave("err","⚠ "+e.message); }
@@ -1220,7 +1222,7 @@ async function openAdmin(){
 }
 $("#login-form").addEventListener("submit", async e=>{
   e.preventDefault(); $("#login-err").textContent="";
-  try{ await store.login($("#email").value.trim(), $("#pwd").value); $("#pwd").value=""; openAdmin(); }
+  try{ await store.login($("#pwd").value); $("#pwd").value=""; openAdmin(); }
   catch(err){ $("#login-err").textContent = err.message; }
 });
 $("#logout").onclick = async () => { await store.logout(); location.hash=""; };
