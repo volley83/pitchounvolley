@@ -1139,8 +1139,8 @@ Comité du Var de Volley-Ball`;
 }
 // Gmail n'accepte que du texte brut dans le lien : le mail mis en forme est copié, puis collé (Ctrl+V) dans Gmail.
 // La signature Gmail (Sportivement, nom, logo) est ajoutée par Gmail lui-même : on ne la colle pas une 2e fois.
-async function gmailMisEnForme({bcc="", su="", body=""}){
-  const base = `https://mail.google.com/mail/?view=cm&fs=1${bcc ? "&bcc="+encodeURIComponent(bcc) : ""}&su=${encodeURIComponent(su)}`;
+async function gmailMisEnForme({to="", bcc="", su="", body=""}){
+  const base = `https://mail.google.com/mail/?view=cm&fs=1${to ? "&to="+encodeURIComponent(to) : ""}${bcc ? "&bcc="+encodeURIComponent(bcc) : ""}&su=${encodeURIComponent(su)}`;
   const k = body.lastIndexOf("Sportivement,"), court = (k>=0 ? body.slice(0,k) : body).replace(/\s+$/,"");
   const lien = s => s.replace(/(https?:\/\/[^\s<]+[^\s<.,;:!?)])/g,'<a href="$1">$1</a>').replace(/([\w.+-]+@[\w-]+\.[\w.-]+)/g, m => `<a href="mailto:${m}">${m}</a>`);
   const html = `<div style="font-family: Garamond, 'EB Garamond', 'Times New Roman', serif; font-size: 13pt; color: #1a1a1a">${esc(court).split("\n").map(l=>lien(l)||"&nbsp;").join("<br>")}<br><br></div>`;
@@ -1752,18 +1752,61 @@ async function renderValAdmin(){
     ${pls.map(p=>`<tr data-id="${p.id}">
       <td><b>${esc(plLabel(p))}</b><div class="club">${esc(p.organisateur||"")}</div></td>
       <td>${st(p.statut)}</td><td class="num">${cnt[p.id]||0}</td>
-      <td><input type="text" class="t-code" data-code value="${esc(codes[String(p.id)]||"")}" placeholder="aucun" style="width:130px"> <button class="ghost small" data-gen>Générer</button></td>
+      <td><input type="text" class="t-code" data-code value="${esc(codes[String(p.id)]||"")}" placeholder="aucun" style="width:130px"> <button class="ghost small" data-gen>Générer</button> <button class="ghost small" data-mail title="Envoyer le code au club organisateur" ${codes[String(p.id)]?"":"disabled"}>✉ Mail</button></td>
       <td><select data-sess ${p.statut==="valide"?"disabled":""}><option value="1" ${sessionsOf(p)===1?"selected":""}>1 (plateau simple)</option><option value="2" ${sessionsOf(p)===2?"selected":""}>2 (matin + après-midi)</option></select></td>
       <td><button class="small" data-open>${p.statut==="saisi"?"Vérifier et valider":"Voir"}</button></td></tr>`).join("")}
     </tbody></table></div></div>`;
   $("#view").querySelectorAll("tr[data-id]").forEach(tr=>{
     const id = +tr.dataset.id, inp = tr.querySelector("[data-code]");
     const saveCode = async () => { setSave("wait","Enregistrement…"); try{ await store.setCode(id, inp.value.trim()); setSave("ok","✓ Code enregistré"); }catch(e){ setSave("err","⚠ Erreur"); } };
+    const bm = tr.querySelector("[data-mail]");
+    inp.oninput = () => { bm.disabled = !inp.value.trim(); };
     inp.onchange = saveCode;
+    bm.onclick = () => { const p = pls.find(x=>x.id===id); mailCodeOrgaPit(p, inp.value.trim(), calTri(pls)); };
     tr.querySelector("[data-gen]").onclick = () => { const p = pls.find(x=>x.id===id); inp.value = (p.code||"PIT") + "-" + Math.random().toString(36).slice(2,6).toUpperCase(); saveCode(); };
     tr.querySelector("[data-sess]").onchange = async e => { try{ await store.updatePlateau(id,{sessions:+e.target.value}); setSave("ok","✓ Enregistré"); }catch(err){ setSave("err","⚠ Erreur"); } };
     tr.querySelector("[data-open]").onclick = async () => { VAL = {open:id}; renderValDetail(); };
   });
+}
+// Brouillon Gmail pour le club organisateur : code, espace organisateur, avant / après le plateau
+async function mailCodeOrgaPit(p, code, list){
+  if(!code){ setSave("err","⚠ Génère d'abord le code organisateur"); return; }
+  const i = list.findIndex(x=>x.id===p.id), nom = i>=0 ? plNom(list,i) : "Plateau";
+  const d = dLocal(p.date), lim = dLocal(p.date_limite), S = sessionsOf(p);
+  const jour = fmtD(d,{weekday:"long",day:"numeric",month:"long"});
+  const ou = [p.lieu, p.ville].filter(Boolean).join(", ");
+  const url = SITE_URL + "#organisateur";
+  const su = `Pitchoun' Volley – ${cap1(nom)} du ${jour}${p.ville?" à "+p.ville:""} : votre code organisateur`;
+  const body = `Bonjour,
+
+Vous organisez le ${nom.toLowerCase()==="plateau final"?"Plateau Final":nom.toLowerCase()} de Pitchoun' Volley le ${jour}${hMail(p.heure)?" à "+hTxt(hMail(p.heure)):""}${ou?" ("+ou+")":""}. Merci pour votre accueil !
+
+Votre code organisateur : ${code}
+
+Avec ce code, connectez-vous à l'espace organisateur (choisissez le plateau, puis saisissez le code) :
+${url}
+
+AVANT LE PLATEAU, vous y trouverez :
+- la liste des enfants inscrits, mise à jour en direct${lim?` jusqu'à la clôture des inscriptions (${fmtD(lim,{weekday:"long",day:"numeric",month:"long"})} au soir)`:""}, classés par couleur (une poule par couleur) avec le nombre d'enfants par club ;
+- les contacts des clubs inscrits ;
+- les documents pour le jour du plateau : export Excel (feuille récapitulative + une feuille par couleur, pour organiser les terrains et noter les matchs) et impression de la liste.
+Si un club vous prévient qu'un enfant ne viendra pas, vous pourrez le retirer de la liste le jour du plateau (✕). Un enfant qui se présente sans être inscrit s'ajoute avec « + Ajouter un enfant ».
+
+APRÈS LE PLATEAU :
+- reconnectez-vous avec le même code ;
+- saisissez pour chaque enfant le nombre de matchs gagnés et joués${S===2?", pour le matin et pour l'après-midi":" (total de la journée)"}, et retirez les absents ;
+- cliquez sur « Envoyer les résultats au Comité ».
+Vous pouvez encore corriger les résultats tant que le Comité ne les a pas validés. Le Comité vérifie ensuite les changements de couleur, puis les classements sont mis à jour sur le site.
+
+Pour rappel, le règlement et les niveaux de jeu sont sur le site du Pitchoun' Volley :
+${SITE_URL}
+
+Sportivement,
+
+Clément ROBEAU
+Comité du Var de Volley-Ball`;
+  await gmailMisEnForme({to: p.email || "", su, body});
+  if(!p.email) setSave("err","⚠ Pas de mail d'inscription pour ce plateau dans l'onglet « Calendrier » : complète le destinataire dans Gmail");
 }
 function proposer(c0, d0, p0, sessions){
   // applique le règlement de passage, plateau par plateau (matin puis après-midi pour un double plateau)
