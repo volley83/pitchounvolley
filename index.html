@@ -852,12 +852,12 @@ function renderTabs(){
     const n = A.joueurs.filter(j=>j.club===c.code).length;
     return `<button class="tab ${tab===c.code?"on":""}" data-t="${esc(c.code)}">${esc(c.code)} <small>${n}</small></button>`;
   }).join("");
-  $("#tabs").innerHTML = t + `<button class="tab ${tab==="#clubs"?"on":""}" data-t="#clubs">🏆 Classements clubs</button>
-    <button class="tab ${tab==="#cal"?"on":""}" data-t="#cal">📅 Calendrier</button>
+  $("#tabs").innerHTML = `<button class="tab ${tab==="#cal"?"on":""}" data-t="#cal">📅 Calendrier</button>
     <button class="tab ${tab==="#ins"?"on":""}" data-t="#ins">📝 Inscriptions</button>
     <button class="tab ${tab==="#val"?"on":""}" data-t="#val">✅ Plateaux &amp; résultats</button>
     <button class="tab ${tab==="#rappel"?"on":""}" data-t="#rappel">✉ Mail de rappel</button>
-    <button class="tab ${tab==="#reglages"?"on":""}" data-t="#reglages">⚙ Réglages</button>`;
+    <button class="tab ${tab==="#clubs"?"on":""}" data-t="#clubs">🏆 Classements clubs</button>
+    <button class="tab ${tab==="#reglages"?"on":""}" data-t="#reglages">⚙ Réglages</button>` + t;
   $("#tabs").querySelectorAll(".tab").forEach(b=>b.onclick=()=>{ tab=b.dataset.t; VAL=null; renderAdmin(); });
 }
 function colorSelect(cls,val,withNone){
@@ -1270,7 +1270,7 @@ async function openAdmin(){
   $("#login").classList.add("hide"); $("#panel").classList.remove("hide");
   setSave("wait","Chargement…");
   try{ A = await store.adminData(); }catch(e){ console.error(e); setSave("err","⚠ Impossible de charger les données"); return; }
-  if(!tab || (!tab.startsWith("#") && !A.clubs.some(c=>c.code===tab))) tab = A.clubs[0]?.code || "#reglages";
+  if(!tab || (!tab.startsWith("#") && !A.clubs.some(c=>c.code===tab))) tab = "#cal";
   setSave("ok",""); renderAdmin();
 }
 $("#login-form").addEventListener("submit", async e=>{
