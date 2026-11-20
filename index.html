@@ -727,11 +727,19 @@ function renderProchain(all){
         <span>📅 ${fmtD(d,{weekday:"long",day:"numeric",month:"long"})}${p.heure?" · début des rencontres à "+fmtH(esc(p.heure)):""}</span>
         <span>📍 ${lieu ? `<a href="${maps}" target="_blank" rel="noopener">${esc(lieu)}</a>` : '<span class="muted">Lieu à confirmer</span>'}</span>
         ${p.organisateur?`<span>🏐 Organisé par ${esc(p.organisateur)}</span>`:""}
+        <span id="np-nb" class="hide"></span>
         ${p.remarque?`<span class="muted">ℹ ${esc(p.remarque)}</span>`:""}
       </div>
     </div>
     <div class="np-act">${act}<a href="#" class="np-cal" id="np-cal">📅 Voir tout le calendrier</a></div>
   </section>`;
+  store.comptePublic().then(c=>{
+    const el = $("#np-nb"); if(!el) return;
+    const o = c[p.id], n = o ? o.enfants : 0, k = o ? o.clubs : 0;
+    if(!n && !plOpen(p)) return;
+    el.innerHTML = n ? `🙋 <b>${n}</b> enfant${n>1?"s":""} inscrit${n>1?"s":""} · <b>${k}</b> club${k>1?"s":""}` : "🙋 Aucun enfant inscrit pour l'instant";
+    el.classList.remove("hide");
+  }).catch(e=>console.warn("compte inscrits", e));
   $("#np-cal").onclick = e => { e.preventDefault(); pubMode = "cal"; loadPublic().catch(err=>console.error(err)); window.scrollTo(0,0); };
 }
 async function renderCalendrier(){
@@ -1364,6 +1372,13 @@ Object.assign(store, {
   async inscriptionsPlateau(id){
     if(DEMO){ this.demoIns(); return this.db.inscriptions.filter(x=>x.plateau_id===id).map(x=>({...x})); }
     const {data,error} = await sb.from("pitchoun_inscriptions").select("*").eq("plateau_id",id).order("id"); if(error) throw error; return data;
+  },
+  // public : nombre d'enfants et de clubs inscrits par plateau (fonction pitchoun_compte_inscrits)
+  async comptePublic(){
+    if(DEMO){ this.demoIns(); const c={}; this.db.inscriptions.forEach(x=>{ const o=c[x.plateau_id] ||= {enfants:0,clubs:new Set()}; o.enfants++; o.clubs.add(x.club); });
+      Object.values(c).forEach(o=>o.clubs=o.clubs.size); return c; }
+    const {data,error} = await sb.rpc("pitchoun_compte_inscrits"); if(error) throw error;
+    const c={}; (data||[]).forEach(x=>c[x.plateau_id]={enfants:+x.nb_enfants||0, clubs:+x.nb_clubs||0}); return c;
   },
   async compteInscriptions(){
     if(DEMO){ this.demoIns(); const c={}; this.db.inscriptions.forEach(x=>c[x.plateau_id]=(c[x.plateau_id]||0)+1); return c; }
