@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+<script src="/comite/session.js"></script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pitchoun’ Volley</title>
@@ -1978,7 +1979,10 @@ async function route(){
   if(ins){ renderInscription(+h.split("/")[1]); return; }
   if(org){ renderOrga(); return; }
   if(adm){
-    if(await store.session()) openAdmin();
+    let ok = await store.session();
+    // connexion unique de l'Espace Comité : le mot de passe déjà saisi ailleurs ouvre directement l'accès
+    if(!ok && store.adminPwd()){ try{ await store.login(store.adminPwd()); ok = true; }catch(e){} }
+    if(ok) openAdmin();
     else { $("#login").classList.remove("hide"); $("#panel").classList.add("hide"); }
   } else {
     try{ await loadPublic(); }catch(e){ console.error(e); $("#pub-table tbody").innerHTML='<tr><td colspan="7">Impossible de charger le classement.</td></tr>'; }
