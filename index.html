@@ -257,6 +257,8 @@ details.card summary{cursor:pointer}
 .statgrid b{display:block;font-size:18px}
 .statgrid .prize{background:var(--soft);border-color:#c9daf3}
 .save{font-size:13px;margin-left:auto}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);z-index:9999;background:#1f7a3a;color:#fff;font-weight:700;font-size:16px;padding:14px 22px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}.toast.err{background:#b3122a}
 .save.ok{color:var(--ok)}.save.wait{color:var(--warn)}.save.err{color:#b3122a}
 .login{max-width:360px;margin:30px auto}
 .login label{display:block;margin:10px 0 4px;font-weight:600}
@@ -846,6 +848,14 @@ const f2 = x => x.toLocaleString("fr-FR",{maximumFractionDigits:2});
 const pct = x => (x*100).toLocaleString("fr-FR",{maximumFractionDigits:1})+" %";
 
 function setSave(state,msg){ const s=$("#save"); s.className="save "+state; s.textContent=msg; }
+// message bien visible en bas de l'écran, quelle que soit la position dans la page
+function toast(msg, err){
+  let t = document.getElementById("toast");
+  if(!t){ t = document.createElement("div"); t.id = "toast"; t.className = "toast"; t.setAttribute("role","status"); document.body.appendChild(t); }
+  t.textContent = msg; t.className = "toast" + (err?" err":"");
+  requestAnimationFrame(()=>t.classList.add("on"));
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("on"), err?6000:3000);
+}
 const timers = {};
 function queueSave(p){
   setSave("wait","Enregistrement…");
@@ -1921,7 +1931,7 @@ async function renderValDetail(){
     setSave("wait","Validation…");
     try{
       const n = await store.valider(id, VAL.rows.map(r=>({id:r.id, joues1:N0(r.joues1), gagnes1:N0(r.gagnes1), joues2:N0(r.joues2), gagnes2:N0(r.gagnes2), couleur_apres:r.couleur_apres||null, demi_apres:r.demi_apres||null, presque:!!r.presque_apres, remarque:r.remarque||""})));
-      A = await store.adminData(); renderTabs(); setSave("ok",`✓ Plateau validé : ${n} enfants mis à jour`); renderValDetail();
+      A = await store.adminData(); renderTabs(); setSave("ok",`✓ Plateau validé : ${n} enfants mis à jour`); toast(`✓ Plateau validé : ${n} enfants mis à jour`); renderValDetail();
     }catch(e){ console.error(e); setSave("err","⚠ " + e.message); }
   };
 }
@@ -1967,7 +1977,9 @@ async function valSave(){
   try{
     for(const r of VAL.rows) await store.updateInscription(r.id, {joues1:N0(r.joues1), gagnes1:N0(r.gagnes1), joues2:N0(r.joues2), gagnes2:N0(r.gagnes2), couleur_apres:r.couleur_apres||null, demi_apres:r.demi_apres||null, presque_apres:!!r.presque_apres, remarque:r.remarque||""});
     VAL.dirty = false; setSave("ok","✓ Enregistré");
-  }catch(e){ console.error(e); setSave("err","⚠ Erreur d'enregistrement"); }
+    toast("✓ Modifications enregistrées");
+    const b = $("#val-save"); if(b){ b.textContent = "✓ Enregistré"; setTimeout(()=>{ if($("#val-save")) $("#val-save").textContent = "💾 Enregistrer les modifications"; }, 2500); }
+  }catch(e){ console.error(e); setSave("err","⚠ Erreur d'enregistrement"); toast("⚠ Erreur : les modifications n'ont pas été enregistrées. Vérifie ta connexion et réessaie.", true); }
 }
 
 async function route(){
